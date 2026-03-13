@@ -18443,7 +18443,7 @@ const useWallet = () => {
 
 // Marketplace contract address — set this to your deployed OP-721 marketplace 0x address.
 // Until a contract is deployed, interactions use signMessage (Path B) for intent signing.
-const MARKETPLACE_CONTRACT = 'opt1sqpk4wv6p46ht52p0uyulrkdw50pg90ku45993kc0';
+const MARKETPLACE_CONTRACT = null;
 // ─── TO ACTIVATE REAL TRANSACTIONS ─────────────────────────────────────────
 // 1. Build the contract:  cd opaldo-contract && npm install && npm run build
 // 2. Deploy:              opnet deploy --network testnet --contract ./build/release.wasm
@@ -18451,8 +18451,8 @@ const MARKETPLACE_CONTRACT = 'opt1sqpk4wv6p46ht52p0uyulrkdw50pg90ku45993kc0';
 // const MARKETPLACE_CONTRACT = '0x0000000000000000000000000000000000000000000000000000000000000000';
 // ────────────────────────────────────────────────────────────────────────────
 
-// Validate a P2OP OPNet contract address (opt1... bech32 format)
-const isValidContractAddress = (addr) => typeof addr === 'string' && addr.startsWith('opt1') && addr.length > 10;
+// Validate a P2OP OPNet contract address (must be 0x + 64 hex chars)
+const isValidContractAddress = (addr) => /^0x[0-9a-fA-F]{64}$/.test(addr || '');
 
 // Fetch UTXOs for an address from OPNet RPC
 const fetchUTXOs = async (address) => {
@@ -19807,7 +19807,7 @@ const CollectionDetailPage = memo(({ col, onBack, onBuyItem, walletAddress, wall
   const [search, setSearch] = React.useState('');
   const [sort, setSort] = React.useState('price-asc');
   const [rarityFilter, setRarityFilter] = React.useState('All');
-  const [activeTab, setActiveTab] = React.useState('items'); // 'items' | 'activity' | 'owned'
+  const [activeTab, setActiveTab] = React.useState('items'); // 'items' | 'activity'
   const [hov, setHov] = React.useState(null);
   const { toUsd } = usePrices();
 
@@ -19936,74 +19936,10 @@ const CollectionDetailPage = memo(({ col, onBack, onBuyItem, walletAddress, wall
           )
           , 'ACTIVITY'
         )
-        /* Owned tab button */
-        , e('button', {
-            onClick: () => setActiveTab(activeTab === 'owned' ? 'items' : 'owned'),
-            style: {
-              background: activeTab === 'owned' ? 'rgba(34,197,94,0.18)' : 'rgba(255,255,255,0.04)',
-              border: activeTab === 'owned' ? '1px solid rgba(34,197,94,0.6)' : '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: activeTab === 'owned' ? 700 : 500,
-              color: activeTab === 'owned' ? '#22c55e' : 'rgba(255,255,255,0.45)',
-              cursor: 'pointer', transition: 'all .15s', letterSpacing: '.03em',
-              display: 'flex', alignItems: 'center', gap: 5,
-            }
-          }
-          , e('svg', { width:11, height:11, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:2 }
-            , e('path', { d:'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z' })
-            , e('path', { d:'M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z' })
-          )
-          , 'OWNED'
-          , (ownedNFTs && ownedNFTs.length > 0) && e('span', {
-              style: { background: 'rgba(34,197,94,0.3)', borderRadius: 10, padding: '1px 6px', fontSize: 10, fontWeight: 700, color: '#22c55e' }
-            }, ownedNFTs.length)
-        )
       )
       /* ── Items Grid / Activity ── */
       , activeTab === 'activity'
         ? e(CollectionActivity, { col, walletAddress, activityLog: activityLog || [] })
-        : activeTab === 'owned'
-        ? e(React.Fragment, null
-            , e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 20px 12px' } }
-                , e('span', { style: { fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '.04em' } },
-                    ownedNFTs && ownedNFTs.length > 0
-                      ? `You own ${ownedNFTs.length} item${ownedNFTs.length !== 1 ? 's' : ''} in this collection`
-                      : 'You don\'t own any items in this collection yet')
-              )
-            , ownedNFTs && ownedNFTs.length > 0
-              ? e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 12, padding: '0 20px' } }
-                  , ownedNFTs.map((item, i) => {
-                      const isHov = hov === item.id;
-                      return (
-                        e('div', { key: item.id,
-                            onMouseEnter: () => setHov(item.id), onMouseLeave: () => setHov(null),
-                            style: { borderRadius: 12, overflow: 'hidden', border: `1px solid ${isHov ? (col.accent + '66') : 'rgba(34,197,94,0.2)'}`,
-                              background: 'rgba(34,197,94,0.04)', cursor: 'default',
-                              transition: 'all .18s', transform: isHov ? 'translateY(-3px)' : 'none',
-                              boxShadow: isHov ? `0 8px 24px rgba(34,197,94,0.15)` : 'none' } }
-                          , e('div', { style: { position: 'relative' } }
-                              , e(NFTArt, { nft: item, size: '100%' })
-                              , e('div', { style: { position: 'absolute', top: 6, right: 6, background: 'rgba(34,197,94,0.85)', borderRadius: 6, padding: '2px 7px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: '.06em' } }, 'OWNED')
-                            )
-                          , e('div', { style: { padding: '8px 10px 10px' } }
-                              , e('div', { style: { fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, item.name)
-                              , e('div', { style: { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 6 } }, item.rarity || 'Common')
-                              , item.isListed
-                                ? e('div', { style: { fontSize: 11, color: '#f7931a', fontWeight: 700 } }, `Listed: ${item.listPrice || item.price} BTC`)
-                                : e('div', { style: { fontSize: 11, color: 'rgba(255,255,255,0.3)' } }, 'Not listed')
-                            )
-                        )
-                      );
-                    })
-                )
-              : e('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', gap: 12 } }
-                  , e('svg', { width: 48, height: 48, viewBox: '0 0 24 24', fill: 'none', stroke: 'rgba(255,255,255,0.15)', strokeWidth: 1.5 }
-                      , e('path', { d: 'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z' })
-                      , e('path', { d: 'M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z' })
-                    )
-                  , e('div', { style: { fontSize: 13, color: 'rgba(255,255,255,0.3)', textAlign: 'center' } }, 'No items owned yet')
-                  , e('div', { style: { fontSize: 11, color: 'rgba(255,255,255,0.2)', textAlign: 'center' } }, 'Mint or buy from this collection to see your items here')
-                )
-          )
         : e(React.Fragment, null
             , e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 20px 8px' } }
                 , e('span', { style: { fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '.04em' } },
@@ -22843,7 +22779,7 @@ React.createElement('div', { style: { minHeight:"100vh", background:T.bg, fontFa
             , React.createElement('span', { style: { marginRight:6, width:7, height:7, background:T.green, borderRadius:"50%", display:"inline-block" },} )
             , shortAddr
         , walletType && React.createElement('span', { style:{ fontSize:10, color:"rgba(255,255,255,.45)", marginLeft:6, background:"rgba(255,255,255,.06)", borderRadius:4, padding:"1px 5px" } }, walletType === 'opwallet' ? 'OP_WALLET' : walletType === 'unisat' ? 'Unisat' : walletType)
-
+        , balance && React.createElement('span', { style:{ fontSize:11, color:T.green, marginLeft:6, fontFamily:"monospace" } }, balance.display)
           )
           , React.createElement('button', { onClick: disconnect,
             style: { background:"transparent", border:`1px solid ${T.border}`, borderRadius:8,
@@ -23084,13 +23020,13 @@ React.createElement('div', { style: { minHeight:"100vh", background:T.bg, fontFa
                     , React.createElement('span', { style: { marginRight:6, width:7, height:7, background:T.green, borderRadius:"50%", display:"inline-block" },} )
                     , shortAddr
         , walletType && React.createElement('span', { style:{ fontSize:10, color:"rgba(255,255,255,.45)", marginLeft:6, background:"rgba(255,255,255,.06)", borderRadius:4, padding:"1px 5px" } }, walletType === 'opwallet' ? 'OP_WALLET' : walletType === 'unisat' ? 'Unisat' : walletType)
-
+        , balance && React.createElement('span', { style:{ fontSize:11, color:T.green, marginLeft:6, fontFamily:"monospace" } }, balance.display)
                   )
                 , React.createElement('button', { onClick: disconnect,
                     style: { background:"transparent", border:`1px solid ${T.border}`, borderRadius:8,
                       padding:"6px 10px", fontSize:12, color:T.muted, cursor:"pointer" },}, "Disconnect")
                 , React.createElement('button', { onClick: () => setSelectedCol(null),
-                    style: { display:'none', background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:8,
+                    style: { background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:8,
                       padding:"6px 11px", fontSize:16, color:"rgba(239,68,68,0.8)", cursor:"pointer", lineHeight:1, fontWeight:700 },}, "×")
               )
             ) : (
