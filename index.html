@@ -19759,7 +19759,7 @@ const CollectionActivity = memo(({ col, walletAddress, activityLog }) => {
   );
 });
 
-const CollectionDetailPage = memo(({ col, onBack, onBuyItem, walletAddress, walletNetwork, ownedIds, ownedNFTs, onConnect, activityLog }) => {
+const CollectionDetailPage = memo(({ col, onBack, onBuyItem, walletAddress, walletNetwork, ownedIds, ownedNFTs, onConnect, activityLog, onSell }) => {
   if (!col) return null;
 
   const livePrices = useLivePrices();
@@ -19807,7 +19807,8 @@ const CollectionDetailPage = memo(({ col, onBack, onBuyItem, walletAddress, wall
   const [search, setSearch] = React.useState('');
   const [sort, setSort] = React.useState('price-asc');
   const [rarityFilter, setRarityFilter] = React.useState('All');
-  const [activeTab, setActiveTab] = React.useState('items'); // 'items' | 'activity'
+  const [activeTab, setActiveTab] = React.useState('items'); // 'items' | 'activity' | 'owned'
+  const [selectedOwnedNFT, setSelectedOwnedNFT] = React.useState(null);
   const [hov, setHov] = React.useState(null);
   const { toUsd } = usePrices();
 
@@ -19834,6 +19835,11 @@ const CollectionDetailPage = memo(({ col, onBack, onBuyItem, walletAddress, wall
     const sortFn   = sort === 'price-desc' ? (a, b) => b.price - a.price : (a, b) => a.price - b.price;
     return [...listed.sort(sortFn), ...unlisted.sort(sortFn)];
   }, [items, search, sort, rarityFilter]);
+
+  // Owned NFTs from this collection specifically
+  const collectionOwnedNFTs = React.useMemo(() => {
+    return (ownedNFTs || []).filter(n => n.collection === col.name || String(Math.floor(n.id / 1000)) === String(col.id));
+  }, [ownedNFTs, col.name, col.id]);
 
   const pct = col.supply > 0 ? Math.min(100, (col.minted / col.supply) * 100) : 100;
   const currency = col.currency || 'BTC';
@@ -19936,10 +19942,110 @@ const CollectionDetailPage = memo(({ col, onBack, onBuyItem, walletAddress, wall
           )
           , 'ACTIVITY'
         )
+        /* Owned tab button */
+        , e('button', {
+            onClick: () => setActiveTab(activeTab === 'owned' ? 'items' : 'owned'),
+            style: {
+              background: activeTab === 'owned' ? 'rgba(34,197,94,0.18)' : 'rgba(255,255,255,0.04)',
+              border: activeTab === 'owned' ? '1px solid rgba(34,197,94,0.6)' : '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: activeTab === 'owned' ? 700 : 500,
+              color: activeTab === 'owned' ? '#22c55e' : 'rgba(255,255,255,0.45)',
+              cursor: 'pointer', transition: 'all .15s', letterSpacing: '.03em',
+              display: 'flex', alignItems: 'center', gap: 5,
+            }
+          }
+          , e('svg', { width:11, height:11, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:2 }
+            , e('rect', { x:2, y:3, width:20, height:14, rx:2 })
+            , e('path', { d:'M8 21h8M12 17v4' })
+          )
+          , 'OWNED'
+          , collectionOwnedNFTs.length > 0 && e('span', {
+              style: { background: 'rgba(34,197,94,0.3)', borderRadius: 10, padding: '0px 5px', fontSize: 10, fontWeight: 800, color: '#22c55e', marginLeft: 2 }
+            }, collectionOwnedNFTs.length)
+        )
       )
-      /* ── Items Grid / Activity ── */
+      /* ── Items Grid / Activity / Owned ── */
       , activeTab === 'activity'
         ? e(CollectionActivity, { col, walletAddress, activityLog: activityLog || [] })
+        : activeTab === 'owned'
+        ? e(React.Fragment, null
+            /* Owned NFTs header */
+            , e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 20px 12px' } }
+                , e('span', { style: { fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '.04em' } },
+                    collectionOwnedNFTs.length > 0
+                      ? `You own ${collectionOwnedNFTs.length} NFT${collectionOwnedNFTs.length > 1 ? 's' : ''} from this collection`
+                      : 'No owned NFTs from this collection')
+              )
+            , collectionOwnedNFTs.length === 0
+              ? e('div', { style: { textAlign: 'center', padding: '60px 20px' } }
+                  , e('div', { style: { fontSize: 40, marginBottom: 12, opacity: 0.3 } }, '◈')
+                  , e('div', { style: { fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: 8 } }, 'No NFTs owned from this collection')
+                  , e('div', { style: { fontSize: 12, color: 'rgba(255,255,255,0.25)' } }, 'Buy items from this collection to see them here')
+                )
+              : e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 12, padding: '0 20px' } }
+                  , collectionOwnedNFTs.map((nft, i) => {
+                      const isHov = hov === nft.id;
+                      return e('div', {
+                        key: nft.id,
+                        onClick: () => setSelectedOwnedNFT(nft),
+                        onMouseEnter: () => setHov(nft.id), onMouseLeave: () => setHov(null),
+                        style: { borderRadius: 12, overflow: 'hidden', border: `1px solid ${isHov ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,.07)'}`,
+                          background: 'rgba(255,255,255,.03)', cursor: 'pointer',
+                          transition: 'all .18s', transform: isHov ? 'translateY(-3px)' : 'none',
+                          boxShadow: isHov ? '0 8px 24px rgba(34,197,94,0.15)' : 'none',
+                          animation: `fadeIn .3s ease ${i * 0.04}s both` }
+                      }
+                        , e('div', { style: { height: 155, background: `linear-gradient(135deg, ${nft.color1||'#f7931a'}33, ${nft.color2||'#cc5500'}22)`,
+                            position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } }
+                          , e(NFTArt, { nft, size: 130 })
+                          /* Hover overlay — Sell */
+                          , e('div', { style: {
+                              position: 'absolute', inset: 0,
+                              background: 'linear-gradient(to top, rgba(34,197,94,0.85) 0%, rgba(34,197,94,0.4) 40%, transparent 100%)',
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end',
+                              paddingBottom: 12, gap: 4,
+                              opacity: isHov ? 1 : 0,
+                              transform: isHov ? 'translateY(0)' : 'translateY(8px)',
+                              transition: 'opacity .22s ease, transform .22s ease',
+                              pointerEvents: 'none' } }
+                            , e('div', { style: { fontSize: 13, fontWeight: 800, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)', letterSpacing: '.04em' } }, nft.isListed ? '✏️ Manage Listing' : '🏷️ List for Sale')
+                          )
+                          , e('div', { style: { position: 'absolute', top: 6, left: 6,
+                              background: (RARITY_CONFIG[nft.rarity]||RARITY_CONFIG.Common).bg,
+                              border: `1px solid ${(RARITY_CONFIG[nft.rarity]||RARITY_CONFIG.Common).color}55`,
+                              borderRadius: 4, padding: '2px 7px', fontSize: 9, fontWeight: 700,
+                              color: (RARITY_CONFIG[nft.rarity]||RARITY_CONFIG.Common).color,
+                              letterSpacing: '.04em' } }, (nft.rarity||'Common').toUpperCase())
+                          , e('div', { style: { position: 'absolute', top: 6, right: 6,
+                              background: nft.isListed ? 'rgba(247,147,26,0.9)' : 'rgba(34,197,94,0.9)',
+                              borderRadius: 4, padding: '2px 7px', fontSize: 10, fontWeight: 700, color: '#fff' } },
+                              nft.isListed ? 'LISTED' : 'OWNED')
+                        )
+                        , e('div', { style: { padding: '8px 10px 10px' } }
+                          , e('div', { style: { fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.75)', marginBottom: 4,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, nft.name)
+                          , e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } }
+                            , e('span', { style: { fontSize: 12, fontWeight: 800, color: nft.isListed ? '#f7931a' : '#22c55e' } },
+                                nft.isListed ? `${nft.listPrice || nft.price} ${currency}` : 'Not listed')
+                            , e('span', { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)' } }, nft.isListed ? 'Listed' : 'Sell')
+                          )
+                        )
+                      );
+                    })
+                )
+            /* NFTModal for sell/delist — renders inline inside the owned tab */
+            , selectedOwnedNFT && e(NFTModal, {
+                nft: selectedOwnedNFT,
+                onClose: () => setSelectedOwnedNFT(null),
+                walletAddress,
+                onBuy: null,
+                onSell: (nft, price, txId, duration, expiresAt) => {
+                  if (onSell) onSell(nft, price, txId, duration, expiresAt);
+                  setSelectedOwnedNFT(null);
+                },
+                owned: true,
+              })
+          )
         : e(React.Fragment, null
             , e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 20px 8px' } }
                 , e('span', { style: { fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '.04em' } },
@@ -23052,7 +23158,8 @@ React.createElement('div', { style: { minHeight:"100vh", background:T.bg, fontFa
               ownedIds: ownedIds,
               ownedNFTs: ownedNFTs,
               onConnect: connect,
-              activityLog: activityLog,}
+              activityLog: activityLog,
+              onSell: handleSell,}
           )
       )
   )
