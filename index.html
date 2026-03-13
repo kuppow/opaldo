@@ -18443,7 +18443,7 @@ const useWallet = () => {
 
 // Marketplace contract address — set this to your deployed OP-721 marketplace 0x address.
 // Until a contract is deployed, interactions use signMessage (Path B) for intent signing.
-const MARKETPLACE_CONTRACT = null;
+const MARKETPLACE_CONTRACT = 'opt1sqpk4wv6p46ht52p0uyulrkdw50pg90ku45993kc0';
 // ─── TO ACTIVATE REAL TRANSACTIONS ─────────────────────────────────────────
 // 1. Build the contract:  cd opaldo-contract && npm install && npm run build
 // 2. Deploy:              opnet deploy --network testnet --contract ./build/release.wasm
@@ -18451,8 +18451,8 @@ const MARKETPLACE_CONTRACT = null;
 // const MARKETPLACE_CONTRACT = '0x0000000000000000000000000000000000000000000000000000000000000000';
 // ────────────────────────────────────────────────────────────────────────────
 
-// Validate a P2OP OPNet contract address (must be 0x + 64 hex chars)
-const isValidContractAddress = (addr) => /^0x[0-9a-fA-F]{64}$/.test(addr || '');
+// Validate a P2OP OPNet contract address (opt1... bech32 format)
+const isValidContractAddress = (addr) => typeof addr === 'string' && addr.startsWith('opt1') && addr.length > 10;
 
 // Fetch UTXOs for an address from OPNet RPC
 const fetchUTXOs = async (address) => {
@@ -22782,7 +22782,7 @@ React.createElement('div', { style: { minHeight:"100vh", background:T.bg, fontFa
         , balance && React.createElement('span', { style:{ fontSize:11, color:T.green, marginLeft:6, fontFamily:"monospace" } }, balance.display)
           )
           , React.createElement('button', { onClick: disconnect,
-            style: { background:"transparent", border:`1px solid ${T.border}`, borderRadius:8,
+            style: { display:'none', background:"transparent", border:`1px solid ${T.border}`, borderRadius:8,
               padding:"6px 10px", fontSize:12, color:T.muted, cursor:"pointer" },}, "Disconnect"
 
           )
@@ -23023,10 +23023,10 @@ React.createElement('div', { style: { minHeight:"100vh", background:T.bg, fontFa
         , balance && React.createElement('span', { style:{ fontSize:11, color:T.green, marginLeft:6, fontFamily:"monospace" } }, balance.display)
                   )
                 , React.createElement('button', { onClick: disconnect,
-                    style: { background:"transparent", border:`1px solid ${T.border}`, borderRadius:8,
+                    style: { display:'none', background:"transparent", border:`1px solid ${T.border}`, borderRadius:8,
                       padding:"6px 10px", fontSize:12, color:T.muted, cursor:"pointer" },}, "Disconnect")
                 , React.createElement('button', { onClick: () => setSelectedCol(null),
-                    style: { background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:8,
+                    style: { display:'none', background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:8,
                       padding:"6px 11px", fontSize:16, color:"rgba(239,68,68,0.8)", cursor:"pointer", lineHeight:1, fontWeight:700 },}, "×")
               )
             ) : (
